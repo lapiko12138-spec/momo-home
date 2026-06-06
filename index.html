@@ -169,7 +169,7 @@
     .nav-grid {
       display: flex;
       justify-content: space-between;
-      gap: 10px;
+      gap: 7px;
     }
 
     .nav-item {
@@ -177,10 +177,10 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
       text-decoration: none;
-      padding: 14px 6px;
+      padding: 12px 4px;
       border-radius: 20px;
       background: rgba(255,255,255,0.7);
       backdrop-filter: blur(8px);
@@ -199,13 +199,13 @@
     .nav-item:active { transform: translateY(-2px); }
 
     .nav-icon {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
+      font-size: 20px;
       line-height: 1;
     }
 
@@ -213,7 +213,8 @@
     .nav-item:nth-child(2) .nav-icon { background: #fff3d6; }
     .nav-item:nth-child(3) .nav-icon { background: #d6f5e3; }
     .nav-item:nth-child(4) .nav-icon { background: #e8d6ff; }
-    .nav-item:nth-child(5) .nav-icon { background: #d6eeff; }
+    .nav-item:nth-child(5) .nav-icon { background: #fdefd6; }
+    .nav-item:nth-child(6) .nav-icon { background: #d6eeff; }
 
     .nav-label {
       font-size: 11px;
@@ -324,6 +325,11 @@
           <span class="nav-label">穿搭</span>
         </a>
 
+        <a class="nav-item" href="#" onclick="navTo('reading',event)">
+          <div class="nav-icon">📖</div>
+          <span class="nav-label">阅读</span>
+        </a>
+
         <a class="nav-item" href="#" onclick="navTo('desktop',event)">
           <div class="nav-icon">🖥️</div>
           <span class="nav-label">常用网址</span>
@@ -341,10 +347,11 @@
   <script>
     // ── Nav routes ────────────────────────────────────────────────────────────────
     const routes = {
-      run:     '#',
-      clock:   'https://ajiu811.github.io/todo-calendar/todo-calendar.html',
+      run:     'http://localhost:4173/',
+      clock:   'http://localhost:3456/todo-calendar.html',
       money:   'https://ajiu811.github.io/todo-calendar/finance-tracker.html',
-      outfit:  '#',
+      outfit:  'http://localhost:3001/web/',
+      reading: 'http://localhost:8788',
       desktop: 'https://ajiu811.github.io/common-sites/',
     };
 
