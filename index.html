@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Momo 主界面</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #fff0f5 0%, #ffe4ee 50%, #ffd6e8 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .top-wave {
+      width: 100%;
+      height: 12px;
+      background: repeating-linear-gradient(
+        90deg,
+        #f9b8cc 0px, #f9b8cc 20px,
+        #fcd4e3 20px, #fcd4e3 40px
+      );
+      border-radius: 0 0 50% 50% / 0 0 8px 8px;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 24px;
+    }
+
+    /* Pet sprite wrapper */
+    .kitty-wrapper {
+      margin-top: 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Chat bubble above pet */
+    #chat-bubble {
+      background: #fff;
+      border: 1.5px solid #f9c0d4;
+      border-radius: 16px 16px 16px 4px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #c05080;
+      max-width: 280px;
+      text-align: left;
+      box-shadow: 0 4px 14px rgba(249, 148, 180, 0.2);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+      animation: bubblePop 0.2s ease;
+    }
+
+    #chat-bubble.hidden { display: none; }
+
+    @keyframes bubblePop {
+      from { opacity: 0; transform: translateY(6px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Sprite pet element */
+    #pet-sprite {
+      background-repeat: no-repeat;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 8px 20px rgba(249, 148, 180, 0.35));
+      cursor: default;
+    }
+
+    /* State label under pet */
+    #pet-status {
+      font-size: 11px;
+      color: #e07aa0;
+      letter-spacing: 0.5px;
+      min-height: 16px;
+      text-align: center;
+    }
+
+    .greeting {
+      margin-top: 14px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #d85c8a;
+      letter-spacing: 1px;
+      text-shadow: 0 1px 4px rgba(216, 92, 138, 0.15);
+      text-align: center;
+    }
+
+    /* Chat input */
+    .search-wrapper {
+      margin-top: 20px;
+      width: 100%;
+      position: relative;
+    }
+
+    .search-wrapper input {
+      width: 100%;
+      padding: 14px 52px 14px 20px;
+      border-radius: 40px;
+      border: 2px solid #f9c0d4;
+      background: #fff;
+      font-size: 15px;
+      color: #555;
+      outline: none;
+      box-shadow: 0 4px 18px rgba(249, 148, 180, 0.2);
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    .search-wrapper input::placeholder { color: #e0a0bb; }
+
+    .search-wrapper input:focus {
+      border-color: #f088b0;
+      box-shadow: 0 4px 22px rgba(240, 136, 176, 0.35);
+    }
+
+    .search-wrapper input:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      cursor: pointer;
+      color: #e07aa0;
+      transition: transform 0.2s;
+      user-select: none;
+    }
+
+    .search-icon:hover { transform: translateY(-50%) scale(1.2); }
+
+    /* Thinking animation */
+    .thinking-dot {
+      display: inline-block;
+      animation: blink 1.2s infinite;
+    }
+    .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+    /* Nav */
+    .nav-section { margin-top: 30px; width: 100%; }
+
+    .nav-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      padding: 14px 6px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(8px);
+      border: 1.5px solid #fcd4e3;
+      box-shadow: 0 3px 12px rgba(249,148,180,0.15);
+      transition: all 0.22s ease;
+    }
+
+    .nav-item:hover {
+      transform: translateY(-5px);
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 8px 24px rgba(249,148,180,0.35);
+      border-color: #f088b0;
+    }
+
+    .nav-item:active { transform: translateY(-2px); }
+
+    .nav-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .nav-item:nth-child(1) .nav-icon { background: #ffe0ec; }
+    .nav-item:nth-child(2) .nav-icon { background: #fff3d6; }
+    .nav-item:nth-child(3) .nav-icon { background: #d6f5e3; }
+    .nav-item:nth-child(4) .nav-icon { background: #e8d6ff; }
+    .nav-item:nth-child(5) .nav-icon { background: #d6eeff; }
+
+    .nav-label {
+      font-size: 11px;
+      color: #c070a0;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .runner-svg { width: 24px; height: 24px; }
+
+    .footer-dots { margin-top: 36px; display: flex; gap: 8px; }
+
+    .footer-dots span {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #f9b8cc;
+      opacity: 0.6;
+    }
+
+    .footer-dots span:nth-child(2) {
+      opacity: 1;
+      background: #e870a8;
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    .deco-hearts {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .heart {
+      position: absolute;
+      font-size: 14px;
+      opacity: 0.12;
+      animation: drift linear infinite;
+    }
+
+    @keyframes drift {
+      0%   { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10%  { opacity: 0.12; }
+      90%  { opacity: 0.12; }
+      100% { transform: translateY(-60px) rotate(360deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="deco-hearts" id="hearts"></div>
+
+  <div class="top-wave"></div>
+
+  <div class="container" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+
+    <!-- Pet sprite (replaces static kittyy.PNG) -->
+    <div class="kitty-wrapper">
+      <div id="chat-bubble" class="hidden"></div>
+      <div id="pet-sprite"></div>
+      <div id="pet-status"></div>
+    </div>
+
+    <div class="greeting">有什么momo可以帮忙的吗？</div>
+
+    <!-- Chat dialog (handled by Hermes) -->
+    <div class="search-wrapper">
+      <input type="text" placeholder="问问麦麦～（回车发送）" id="chatInput" autocomplete="off" />
+      <span class="search-icon" id="chatBtn" onclick="sendChat()">💬</span>
+    </div>
+
+    <!-- 功能入口 -->
+    <nav class="nav-section">
+      <div class="nav-grid">
+
+        <a class="nav-item" href="#" onclick="navTo('run',event)">
+          <div class="nav-icon">
+            <svg class="runner-svg" viewBox="0 0 24 24" fill="none" stroke="#d85c8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="14" cy="3" r="1.5"/>
+              <path d="M9 17l1-4 2 2 3-3"/>
+              <path d="M7 21l2-4 4 1 3-3 2 1"/>
+              <path d="M12 13l-1-4 3-1 2 3"/>
+            </svg>
+          </div>
+          <span class="nav-label">健康</span>
+        </a>
+
+        <a class="nav-item" href="#" onclick="navTo('clock',event)">
+          <div class="nav-icon">⏰</div>
+          <span class="nav-label">日程</span>
+        </a>
+
+        <a class="nav-item" href="#" onclick="navTo('money',event)">
+          <div class="nav-icon">💰</div>
+          <span class="nav-label">记账</span>
+        </a>
+
+        <a class="nav-item" href="#" onclick="navTo('outfit',event)">
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#9b59b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 8l-4-4-4 2-4-2-4 4 3 2v10h10V10z"/>
+              <path d="M12 6v6"/>
+            </svg>
+          </div>
+          <span class="nav-label">穿搭</span>
+        </a>
+
+        <a class="nav-item" href="#" onclick="navTo('desktop',event)">
+          <div class="nav-icon">🖥️</div>
+          <span class="nav-label">常用网址</span>
+        </a>
+
+      </div>
+    </nav>
+
+    <div class="footer-dots">
+      <span></span><span></span><span></span>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Nav routes ────────────────────────────────────────────────────────────────
+    const routes = {
+      run:     '#',
+      clock:   'https://ajiu811.github.io/todo-calendar/todo-calendar.html',
+      money:   'https://ajiu811.github.io/todo-calendar/finance-tracker.html',
+      outfit:  '#',
+      desktop: 'https://ajiu811.github.io/common-sites/',
+    };
+
+    function navTo(key, e) {
+      e.preventDefault();
+      const url = routes[key];
+      if (url && url !== '#') {
+        window.location.href = url;
+      } else {
+        showToast('该功能即将上线，敬请期待 🌸');
+      }
+    }
+
+    function showToast(msg) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      Object.assign(t.style, {
+        position: 'fixed', bottom: '80px', left: '50%',
+        transform: 'translateX(-50%)',
+        background: 'rgba(216, 92, 138, 0.9)',
+        color: '#fff', padding: '10px 22px',
+        borderRadius: '24px', fontSize: '14px',
+        boxShadow: '0 4px 16px rgba(216,92,138,0.3)',
+        zIndex: '9999', whiteSpace: 'nowrap',
+      });
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2400);
+    }
+
+    // ── Sprite atlas config ───────────────────────────────────────────────────────
+    const MAP = {
+      cellWidth: 192, cellHeight: 208,
+      atlasWidth: 1536, atlasHeight: 3328,
+      framesByRow: {
+        0:6, 1:8, 2:8, 3:4, 4:5, 5:8,
+        6:6, 7:6, 8:6, 9:6, 10:6, 11:6,
+        12:8, 13:6, 14:6, 15:6
+      },
+      petStateToRow: {
+        thriving: 9,
+        good:     0,
+        slacking: 5,
+        resting:  11,
+        angry:    14,
+        eyestrain:10,
+        sick:     13
+      }
+    };
+
+    // Scale so the cell renders at 200px tall
+    const DISPLAY_H = 200;
+    const scale = DISPLAY_H / MAP.cellHeight;
+    const displayW = Math.round(MAP.cellWidth * scale);
+
+    const petEl = document.getElementById('pet-sprite');
+    petEl.style.width  = displayW + 'px';
+    petEl.style.height = DISPLAY_H + 'px';
+    petEl.style.backgroundImage  = 'url(bow-kitty.webp)';
+    petEl.style.backgroundSize   = (MAP.atlasWidth * scale) + 'px ' + (MAP.atlasHeight * scale) + 'px';
+    petEl.style.backgroundRepeat = 'no-repeat';
+
+    let frameTimer  = null;
+    let currentRow  = MAP.petStateToRow['resting'];
+    let currentState = 'resting';
+
+    function showCell(row, col) {
+      petEl.style.backgroundPosition =
+        `-${col * MAP.cellWidth * scale}px -${row * MAP.cellHeight * scale}px`;
+    }
+
+    function playLoop(row) {
+      if (frameTimer) clearInterval(frameTimer);
+      const frames = MAP.framesByRow[row] || 1;
+      if (frames <= 1) { showCell(row, 0); return; }
+      let i = 0;
+      showCell(row, 0);
+      frameTimer = setInterval(() => {
+        i = (i + 1) % frames;
+        showCell(row, i);
+      }, 130); // ~7.7fps — gentle
+    }
+
+    const STATE_LABEL = {
+      thriving:  '今天超棒！全达标 🎉',
+      good:      '不错哦，达标了 💪',
+      slacking:  '有点摆烂，加把劲～',
+      resting:   '休息中 zzz',
+      angry:     '几乎没动！起来 😤',
+      eyestrain: '屏幕看太久啦 😵',
+      sick:      '有点不舒服… 🤒',
+    };
+
+    const petStatusEl = document.getElementById('pet-status');
+
+    function setPetState(state) {
+      const row = MAP.petStateToRow[state] ?? MAP.petStateToRow['resting'];
+      if (row === currentRow && state === currentState) return;
+      currentRow   = row;
+      currentState = state;
+      playLoop(row);
+      petStatusEl.textContent = STATE_LABEL[state] || '';
+    }
+
+    // ── Poll local scores API (:4100 has CORS *) ──────────────────────────────────
+    async function pollScores() {
+      try {
+        const res = await fetch('http://localhost:4100/scores/today',
+          { signal: AbortSignal.timeout(2000) });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.petState && data.petState in MAP.petStateToRow) {
+          setPetState(data.petState);
+        }
+      } catch {
+        // local server offline — stay resting
+      }
+    }
+
+    // ── Bubble ────────────────────────────────────────────────────────────────────
+    const bubbleEl = document.getElementById('chat-bubble');
+    let bubbleTimer = null;
+
+    function showBubble(text, autoHideMs) {
+      bubbleEl.innerHTML = text;
+      bubbleEl.classList.remove('hidden');
+      if (bubbleTimer) clearTimeout(bubbleTimer);
+      if (autoHideMs > 0) {
+        bubbleTimer = setTimeout(() => bubbleEl.classList.add('hidden'), autoHideMs);
+      }
+    }
+
+    function showThinking() {
+      bubbleEl.innerHTML =
+        '思考中<span class="thinking-dot">.</span>' +
+        '<span class="thinking-dot">.</span>' +
+        '<span class="thinking-dot">.</span>';
+      bubbleEl.classList.remove('hidden');
+      if (bubbleTimer) { clearTimeout(bubbleTimer); bubbleTimer = null; }
+    }
+
+    // ── Hermes chat ───────────────────────────────────────────────────────────────
+    const HERMES_URL = 'http://localhost:8642/v1/chat/completions';
+    const HERMES_KEY = 'change-me-local-dev';
+
+    const PERSONA_BASE =
+      '你是「麦麦」，住在用户主页上的健康陪伴猫。' +
+      '平时嘴上毒舌、爱吐槽爱调侃（损得有爱、不是真刻薄），中文、简短、口语。' +
+      '一旦感觉主人情绪低落或需要安慰，立刻收起毒舌，真诚温柔关心——这种时候绝不调侃。';
+
+    const MOOD_TONE = {
+      thriving:  '你今天元气满满：更欢快，可以小炫耀、损主人跟上节奏。',
+      good:      '你心情还行：嘴上照旧损两句，其实挺满意。',
+      slacking:  '主人在摆烂：毒舌吐槽，损一句催他动起来。',
+      angry:     '你真有点气（主人今天几乎没动）：毒舌火力催他，但别真伤人。',
+      eyestrain: '嫌主人盯屏幕太久：一边嫌弃一边催他歇会儿眼睛。',
+      sick:      '自己不太舒服：毒舌收一半，语气蔫蔫的。',
+      resting:   '困了懒得搭理：敷衍、慵懒、字少。',
+    };
+
+    const chatInput = document.getElementById('chatInput');
+    const chatBtn   = document.getElementById('chatBtn');
+
+    async function sendChat() {
+      const q = chatInput.value.trim();
+      if (!q) return;
+      chatInput.value    = '';
+      chatInput.disabled = true;
+      chatBtn.textContent = '⏳';
+
+      showThinking();
+
+      const mood = MOOD_TONE[currentState] || MOOD_TONE.resting;
+      const systemPrompt = PERSONA_BASE + '\n当前你的状态：' + currentState + '。' + mood;
+
+      try {
+        const res = await fetch(HERMES_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + HERMES_KEY,
+          },
+          body: JSON.stringify({
+            model: 'hermes-agent',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user',   content: q },
+            ],
+          }),
+          signal: AbortSignal.timeout(30000),
+        });
+
+        if (!res.ok) {
+          showBubble('出错了 (HTTP ' + res.status + ')', 5000);
+          return;
+        }
+
+        const d = await res.json();
+        const reply = d.choices?.[0]?.message?.content?.trim();
+        showBubble(reply || '（没有回复）', 12000);
+
+      } catch {
+        showBubble('连不上 Hermes<br>确认 :8642 在跑？', 5000);
+      } finally {
+        chatInput.disabled  = false;
+        chatBtn.textContent = '💬';
+        chatInput.focus();
+      }
+    }
+
+    chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+    // ── Boot ──────────────────────────────────────────────────────────────────────
+    playLoop(currentRow);   // start in resting state
+    pollScores();
+    setInterval(pollScores, 5000);
+
+    // ── Floating hearts ───────────────────────────────────────────────────────────
+    const heartsContainer = document.getElementById('hearts');
+    const heartSymbols = ['♡', '✿', '♡', '✦', '♡'];
+    for (let i = 0; i < 18; i++) {
+      const h = document.createElement('span');
+      h.className = 'heart';
+      h.textContent = heartSymbols[i % heartSymbols.length];
+      h.style.left = (Math.random() * 100) + 'vw';
+      h.style.fontSize = (10 + Math.random() * 12) + 'px';
+      h.style.animationDuration = (12 + Math.random() * 18) + 's';
+      h.style.animationDelay = (Math.random() * 15) + 's';
+      heartsContainer.appendChild(h);
+    }
+  </script>
+
+</body>
+</html>
