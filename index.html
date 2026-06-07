@@ -508,7 +508,7 @@
     // ── Poll local scores API (:4100 has CORS *) ──────────────────────────────────
     async function pollScores() {
       try {
-        const res = await fetch('http://localhost:4100/scores/today',
+        const res = await fetch(SCORES_URL,
           { signal: AbortSignal.timeout(2000) });
         if (!res.ok) return;
         const data = await res.json();
@@ -548,8 +548,10 @@
       if (bubbleTimer) { clearTimeout(bubbleTimer); bubbleTimer = null; }
     }
 
-    // ── Hermes chat ───────────────────────────────────────────────────────────────
-    const HERMES_URL = 'http://localhost:8642/v1/chat/completions';
+    // ── API endpoints（本地 server.mjs 时用相对路径，GitHub Pages 时走 localhost 直连）──
+    const IS_LOCAL   = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const SCORES_URL = IS_LOCAL ? '/api/scores'                          : 'http://localhost:4100/scores/today';
+    const HERMES_URL = IS_LOCAL ? '/api/chat'                            : 'http://localhost:8642/v1/chat/completions';
     const HERMES_KEY = 'change-me-local-dev';
 
     const PERSONA_BASE =
