@@ -16,10 +16,13 @@
  *   GET  /api/health        → {"ok":true,"services":{...}} (liveness)
  */
 
-import { createServer } from 'node:http'
-import { readFile }      from 'node:fs/promises'
-import { join, extname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { createServer }            from 'node:http'
+import { readFile }                from 'node:fs/promises'
+import { join, extname }           from 'node:path'
+import { fileURLToPath }           from 'node:url'
+import { execFileSync }            from 'node:child_process'
+import { mkdtempSync, rmSync, readdirSync } from 'node:fs'
+import { tmpdir }                  from 'node:os'
 
 const __dir = fileURLToPath(new URL('.', import.meta.url))
 const PORT  = Number(process.env.PORT ?? 3002)
@@ -114,6 +117,98 @@ async function apiChat(req, res) {
   }
 }
 
+// GET /api/sleep  →  last 14 days sleep score + stages, decoded from .hae
+const SLEEP_DIR = `${process.env.HOME}/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/AutoSync/HealthMetrics/sleep_analysis`
+const APPLE_EPOCH_MS = new Date('2001-01-01T00:00:00Z').getTime()
+let sleepCache = null   // { ts: Date, data: [...] }
+const SLEEP_CACHE_TTL = 5 * 60 * 1000  // re-decode every 5 min
+
+function decodeHae(filePath) {
+  const tmp = join(mkdtempSync(join(tmpdir(), 'hae-')), 'out.json')
+  try {
+    execFileSync('compression_tool', ['-decode', '-a', 'lzfse', '-i', filePath, '-o', tmp],
+      { stdio: 'ignore', timeout: 5000 })
+    const raw = JSON.parse(execFileSync('cat', [tmp], { encoding: 'utf8' }))
+    return raw.data ?? []
+  } catch { return [] }
+  finally { try { rmSync(join(tmp, '..'), { recursive: true }) } catch {} }
+}
+
+function sleepScore(hrs) {
+  if (hrs === null || hrs < 2 || hrs > 13) return null
+  if (hrs >= 7 && hrs <= 9)  return Math.min(100, Math.round(85 + (hrs - 7) / 2 * 15))
+  if (hrs >= 6 && hrs < 7)   return Math.round(70 + (hrs - 6) * 15)
+  if (hrs >= 5 && hrs < 6)   return Math.round(55 + (hrs - 5) * 15)
+  if (hrs >= 4 && hrs < 5)   return Math.round(40 + (hrs - 4) * 15)
+  if (hrs >= 2 && hrs < 4)   return Math.round(20 + (hrs - 2) * 10)
+  if (hrs > 9 && hrs <= 13)  return Math.max(60, Math.round(85 - (hrs - 9) * 6))
+  return null
+}
+
+function buildSleepData() {
+  // Collect all samples (dedup by start timestamp)
+  let files = []
+  try { files = readdirSync(SLEEP_DIR).filter(f => f.endsWith('.hae')).sort() } catch { return [] }
+
+  const seen = new Set()
+  const allSamples = []
+  for (const f of files) {
+    for (const s of decodeHae(join(SLEEP_DIR, f))) {
+      const key = `${s.start}-${s.end}`
+      if (!seen.has(key)) { seen.add(key); allSamples.push(s) }
+    }
+  }
+
+  // Group by wake-up date in CST (UTC+8)
+  const byDate = {}
+  for (const s of allSamples) {
+    const ts = s.end ?? s.start
+    if (!ts) continue
+    const wakeMs = APPLE_EPOCH_MS + ts * 1000
+    const cstDate = new Date(wakeMs + 8 * 3600 * 1000).toISOString().slice(0, 10)
+    if (!byDate[cstDate]) byDate[cstDate] = { total: 0, deep: 0, rem: 0, core: 0, awake: 0 }
+    const d = byDate[cstDate]
+    d.total += s.totalSleep ?? 0
+    d.deep  += s.deep   ?? 0
+    d.rem   += s.rem    ?? 0
+    d.core  += s.core   ?? 0
+    d.awake += s.awake  ?? 0
+  }
+
+  // Build last 14 days
+  const days = []
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    const entry = byDate[key]
+    const hrs = entry ? Math.round(entry.total * 10) / 10 : null
+    const score = sleepScore(hrs)
+    days.push({
+      date: `${d.getMonth() + 1}/${String(d.getDate()).padStart(2, '0')}`,
+      hrs,
+      score,
+      stages: entry ? {
+        deep:  Math.round(entry.deep  * 10) / 10,
+        rem:   Math.round(entry.rem   * 10) / 10,
+        core:  Math.round(entry.core  * 10) / 10,
+        awake: Math.round(entry.awake * 10) / 10,
+      } : null,
+    })
+  }
+
+  const latest = [...days].reverse().find(d => d.score !== null) ?? null
+  return { days, latest }
+}
+
+async function apiSleep(res) {
+  const now = Date.now()
+  if (!sleepCache || now - sleepCache.ts > SLEEP_CACHE_TTL) {
+    sleepCache = { ts: now, data: buildSleepData() }
+  }
+  json(res, 200, sleepCache.data)
+}
+
 // GET /api/health  →  aggregate liveness of local services
 async function apiHealth(res) {
   const check = async (url) => {
@@ -148,6 +243,7 @@ createServer(async (req, res) => {
     if (path === '/api/scores' && method === 'GET')  return apiScores(res)
     if (path === '/api/chat'   && method === 'POST') return apiChat(req, res)
     if (path === '/api/health' && method === 'GET')  return apiHealth(res)
+    if (path === '/api/sleep'  && method === 'GET')  return apiSleep(res)
     json(res, 404, { error: 'unknown api route' })
     return
   }
