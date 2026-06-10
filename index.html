@@ -83,11 +83,44 @@
 
     /* State label under pet */
     #pet-status {
-      font-size: 11px;
-      color: #e07aa0;
+      font-size: 12px;
+      color: #c05080;
       letter-spacing: 0.5px;
-      min-height: 16px;
+      min-height: 18px;
       text-align: center;
+      font-weight: 500;
+      transition: opacity 0.3s;
+    }
+
+    /* Agent active badge */
+    #agent-active-badge {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.85);
+      border: 1.5px solid #f9c0d4;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #c05080;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(249,148,180,0.2);
+      margin-top: 2px;
+    }
+
+    #agent-active-badge.visible { display: flex; }
+
+    .active-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #e07aa0;
+      animation: activePulse 1.2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes activePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
     }
 
     .greeting {
@@ -226,118 +259,6 @@
 
     .runner-svg { width: 24px; height: 24px; }
 
-    /* Sleep card */
-    .sleep-card {
-      margin-top: 18px;
-      width: 100%;
-      background: rgba(255,255,255,0.75);
-      backdrop-filter: blur(8px);
-      border: 1.5px solid #fcd4e3;
-      border-radius: 20px;
-      padding: 14px 18px;
-      box-shadow: 0 3px 14px rgba(249,148,180,0.15);
-    }
-
-    .sleep-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .sleep-title {
-      font-size: 12px;
-      color: #c888a8;
-      font-weight: 600;
-      letter-spacing: 1px;
-    }
-
-    .sleep-score-row {
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-    }
-
-    .sleep-score-num {
-      font-size: 28px;
-      font-weight: 800;
-      line-height: 1;
-      color: #d85c8a;
-    }
-
-    .sleep-score-max {
-      font-size: 12px;
-      color: #e0a0bb;
-    }
-
-    .sleep-hrs {
-      font-size: 12px;
-      color: #c888a8;
-      margin-left: 4px;
-    }
-
-    .sleep-trend-label {
-      font-size: 11px;
-      color: #c888a8;
-    }
-
-    /* Sparkline bars */
-    .sleep-chart {
-      display: flex;
-      align-items: flex-end;
-      gap: 3px;
-      height: 36px;
-      margin-top: 6px;
-    }
-
-    .sleep-bar-wrap {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      position: relative;
-    }
-
-    .sleep-bar {
-      width: 100%;
-      border-radius: 3px 3px 0 0;
-      min-height: 2px;
-      transition: height 0.4s ease;
-    }
-
-    .sleep-bar-label {
-      font-size: 8px;
-      color: #e0a0bb;
-      white-space: nowrap;
-      transform: rotate(-45deg) translateX(-2px);
-      transform-origin: top right;
-      position: absolute;
-      bottom: -14px;
-    }
-
-    .sleep-na { opacity: 0.2; }
-
-    .sleep-stages {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-      flex-wrap: wrap;
-    }
-
-    .sleep-stage-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      color: #c888a8;
-    }
-
-    .sleep-stage-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-    }
-
     .footer-dots { margin-top: 36px; display: flex; gap: 8px; }
 
     .footer-dots span {
@@ -391,26 +312,13 @@
       <div id="chat-bubble" class="hidden"></div>
       <div id="pet-sprite"></div>
       <div id="pet-status"></div>
+      <div id="agent-active-badge">
+        <span class="active-dot"></span>
+        <span id="agent-active-label">麦麦工作中…</span>
+      </div>
     </div>
 
     <div class="greeting loading" id="greeting">麦麦想想…</div>
-
-    <!-- Sleep trend card -->
-    <div class="sleep-card" id="sleepCard" style="display:none">
-      <div class="sleep-header">
-        <span class="sleep-title">😴 睡眠得分</span>
-        <span class="sleep-trend-label" id="sleepTrendLabel"></span>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div class="sleep-score-row">
-          <span class="sleep-score-num" id="sleepScoreNum">—</span>
-          <span class="sleep-score-max">/100</span>
-          <span class="sleep-hrs" id="sleepHrs"></span>
-        </div>
-        <div class="sleep-stages" id="sleepStages"></div>
-      </div>
-      <div class="sleep-chart" id="sleepChart"></div>
-    </div>
 
     <!-- Chat dialog (handled by Hermes) -->
     <div class="search-wrapper">
@@ -475,13 +383,15 @@
 
   <script>
     // ── Nav routes ────────────────────────────────────────────────────────────────
+    // 导航目标 = 各模块「已部署的公开地址」（落地/交付版，不再依赖本地端口）。
+    // 已上线的直接跳；未部署的设为 '#'，navTo 会兜底提示「即将上线」而非跳进死链。
     const routes = {
-      run:     'http://localhost:4173/',
-      clock:   'http://localhost:3456/todo-calendar.html',
-      money:   'https://ajiu811.github.io/todo-calendar/finance-tracker.html',
-      outfit:  'http://localhost:3001/web/',
-      reading: 'http://localhost:8788',
-      desktop: 'https://ajiu811.github.io/common-sites/',
+      run:     'https://lapiko12138-spec.github.io/health-dashboard/',         // 健康（合成 demo 数据）
+      clock:   'https://ajiu811.github.io/todo-calendar/todo-calendar.html',   // 日程（队友已部署）
+      money:   'https://ajiu811.github.io/todo-calendar/finance-tracker.html', // 记账（队友已部署）
+      outfit:  'https://lapiko12138-spec.github.io/xiao-xiao-wardrobe/',       // 穿搭（已上线）
+      reading: 'https://lapiko12138-spec.github.io/weread-dashboard/',    // 微信读书（已上线）
+      desktop: 'https://ajiu811.github.io/common-sites/',                 // 常用网址（外部）
     };
 
     function navTo(key, e) {
@@ -750,12 +660,44 @@
 
     chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
 
+    // ── Agent activity: mirrors desktop pet's talking/working state ───────────────
+    const ACTIVITY_URL     = IS_LOCAL ? '/api/activity' : null
+    const ACTIVITY_WINDOW  = 8000   // ms — match desktop pet
+    const activeBadge      = document.getElementById('agent-active-badge')
+    let   agentWasActive   = false
+
+    async function pollActivity() {
+      if (!ACTIVITY_URL) return
+      try {
+        const res = await fetch(ACTIVITY_URL, { signal: AbortSignal.timeout(2000) })
+        if (!res.ok) return
+        const { msAgo } = await res.json()
+        const active = msAgo !== null && msAgo < ACTIVITY_WINDOW
+        if (active === agentWasActive) return
+        agentWasActive = active
+        if (active) {
+          // override sprite to "review" row (same as desktop pet when agent talking)
+          if (frameTimer) clearInterval(frameTimer)
+          const reviewRow = 8
+          const frames = MAP.framesByRow[reviewRow] || 1
+          let i = 0
+          showCell(reviewRow, 0)
+          frameTimer = setInterval(() => { i = (i + 1) % frames; showCell(reviewRow, i) }, 130)
+          activeBadge.classList.add('visible')
+        } else {
+          // return to ambient petState
+          playLoop(currentRow)
+          activeBadge.classList.remove('visible')
+        }
+      } catch { /* :4100 offline — no change */ }
+    }
+
     // ── Boot ──────────────────────────────────────────────────────────────────────
     playLoop(currentRow);   // start in resting state
     pollScores();
     setInterval(pollScores, 5000);
-    loadSleep();
-    setInterval(loadSleep, 5 * 60 * 1000);  // refresh every 5 min
+    pollActivity();
+    setInterval(pollActivity, 2000);
     // If :4100 is offline and greeting never resolves, show fallback after 3s
     setTimeout(() => {
       if (!greetingFetched) {
@@ -764,83 +706,6 @@
         greetingEl.classList.remove('loading');
       }
     }, 3000);
-
-    // ── Sleep trend ───────────────────────────────────────────────────────────────
-    const STAGE_COLORS = { deep:'#7c6fcd', rem:'#e07aa0', core:'#a8d8ea', awake:'#f9c0d4' }
-    const STAGE_LABELS = { deep:'深睡', rem:'REM', core:'浅睡', awake:'清醒' }
-
-    function scoreColor(s) {
-      if (s === null) return '#f0d0e0'
-      if (s >= 85) return '#5cb87e'
-      if (s >= 70) return '#f0b429'
-      return '#e07070'
-    }
-
-    function trendArrow(days) {
-      const valid = days.filter(d => d.score !== null)
-      if (valid.length < 2) return ''
-      const last = valid[valid.length - 1].score
-      const prev = valid[valid.length - 2].score
-      const diff = last - prev
-      if (diff > 5)  return '↑ 好转'
-      if (diff < -5) return '↓ 下滑'
-      return '→ 持平'
-    }
-
-    async function loadSleep() {
-      const url = IS_LOCAL ? '/api/sleep' : null
-      if (!url) return   // GitHub Pages: skip (needs local server)
-      try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
-        if (!res.ok) return
-        const { days, latest } = await res.json()
-
-        const card = document.getElementById('sleepCard')
-        card.style.display = 'block'
-
-        // Score + hours
-        if (latest) {
-          document.getElementById('sleepScoreNum').textContent = latest.score
-          document.getElementById('sleepScoreNum').style.color = scoreColor(latest.score)
-          document.getElementById('sleepHrs').textContent = latest.hrs ? `${latest.hrs}h` : ''
-        }
-
-        // Trend
-        document.getElementById('sleepTrendLabel').textContent = trendArrow(days)
-
-        // Stages for latest
-        const stagesEl = document.getElementById('sleepStages')
-        stagesEl.innerHTML = ''
-        if (latest?.stages) {
-          for (const [k, label] of Object.entries(STAGE_LABELS)) {
-            const v = latest.stages[k]
-            if (v > 0) {
-              const el = document.createElement('div')
-              el.className = 'sleep-stage-item'
-              el.innerHTML = `<span class="sleep-stage-dot" style="background:${STAGE_COLORS[k]}"></span>${label} ${v}h`
-              stagesEl.appendChild(el)
-            }
-          }
-        }
-
-        // Sparkline bars
-        const chartEl = document.getElementById('sleepChart')
-        chartEl.innerHTML = ''
-        const maxHrs = Math.max(...days.map(d => d.hrs ?? 0), 8)
-        for (const day of days) {
-          const wrap = document.createElement('div')
-          wrap.className = 'sleep-bar-wrap'
-          const pct = day.hrs ? Math.max(4, Math.round((day.hrs / maxHrs) * 36)) : 4
-          const bar = document.createElement('div')
-          bar.className = 'sleep-bar' + (day.hrs ? '' : ' sleep-na')
-          bar.style.height   = pct + 'px'
-          bar.style.background = scoreColor(day.score)
-          bar.title = day.hrs ? `${day.date}: ${day.hrs}h（得分 ${day.score}）` : `${day.date}: 无数据`
-          wrap.appendChild(bar)
-          chartEl.appendChild(wrap)
-        }
-      } catch { /* sleep API offline — hide card */ }
-    }
 
     // ── Floating hearts ───────────────────────────────────────────────────────────
     const heartsContainer = document.getElementById('hearts');

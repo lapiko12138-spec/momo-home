@@ -117,6 +117,16 @@ async function apiChat(req, res) {
   }
 }
 
+// GET /api/activity  →  proxy :4100/activity (agent active status)
+async function apiActivity(res) {
+  try {
+    const r = await proxyFetch(`${MOCK_URL}/activity`)
+    json(res, r.status, r.json())
+  } catch (e) {
+    json(res, 200, { msAgo: null })
+  }
+}
+
 // GET /api/sleep  →  last 14 days sleep score + stages, decoded from .hae
 const SLEEP_DIR = `${process.env.HOME}/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/AutoSync/HealthMetrics/sleep_analysis`
 const APPLE_EPOCH_MS = new Date('2001-01-01T00:00:00Z').getTime()
@@ -240,10 +250,11 @@ createServer(async (req, res) => {
 
   if (url.startsWith('/api/')) {
     const path = url.split('?')[0]
-    if (path === '/api/scores' && method === 'GET')  return apiScores(res)
-    if (path === '/api/chat'   && method === 'POST') return apiChat(req, res)
-    if (path === '/api/health' && method === 'GET')  return apiHealth(res)
-    if (path === '/api/sleep'  && method === 'GET')  return apiSleep(res)
+    if (path === '/api/scores'   && method === 'GET')  return apiScores(res)
+    if (path === '/api/chat'     && method === 'POST') return apiChat(req, res)
+    if (path === '/api/health'   && method === 'GET')  return apiHealth(res)
+    if (path === '/api/sleep'    && method === 'GET')  return apiSleep(res)
+    if (path === '/api/activity' && method === 'GET')  return apiActivity(res)
     json(res, 404, { error: 'unknown api route' })
     return
   }
